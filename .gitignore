@@ -1,0 +1,15 @@
+node_modules/
+dist/
+out/
+.DS_Store
+*.log*
+.eslintcache
+*.tsbuildinfo
+.vite/
+.pnpm-store/
+apps/pichu-client/build/generated/
+apps/pichu-client/resources/plugins/plugins/sites/
+apps/website/
+.env
+.env.*
+!.env.example

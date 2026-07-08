@@ -1,0 +1,11 @@
+node_modules
+dist
+out
+resources/node/
+.electron-dev
+.DS_Store
+.eslintcache
+*.log*
+.env
+.env.*
+!.env.example

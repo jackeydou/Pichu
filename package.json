@@ -1,0 +1,26 @@
+{
+  "name": "PichuClient",
+  "version": "2026.6.2400",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "pnpm --filter pichu-client dev --",
+    "changelog:add": "node scripts/changelog-add-unreleased.mjs",
+    "changelog:check": "node scripts/changelog-check.mjs",
+    "changelog:compose": "node scripts/changelog-compose-release.mjs",
+    "release-notes:check": "node scripts/release-notes-check.mjs",
+    "release:version": "node scripts/release-set-version.mjs",
+    "lint": "biome check",
+    "lint:fix": "biome check --write",
+    "format": "biome format --write",
+    "release:check": "node scripts/release-check.mjs",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "AGPL-3.0-only",
+  "packageManager": "pnpm@10.30.2",
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.9"
+  }
+}

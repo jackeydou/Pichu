@@ -1,0 +1,47 @@
+packages:
+  - apps/*
+  - packages/*
+
+allowBuilds:
+  '@google/genai': false
+  better-sqlite3: true
+  crc64-ecma182.js: false
+  electron: true
+  electron-winstaller: false
+  esbuild: false
+  koffi: false
+  msw: false
+  node-pty: true
+  protobufjs: false
+  sharp: false
+  tos-crc64-js: false
+
+ignoredBuiltDependencies:
+  - '@biomejs/biome'
+  - esbuild
+
+onlyBuiltDependencies:
+  - electron
+  - esbuild
+  - better-sqlite3
+  - node-pty
+
+patchedDependencies:
+  '@anthropic-ai/sandbox-runtime@0.0.71': patches/@anthropic-ai__sandbox-runtime@0.0.71.patch
+
+overrides:
+  'brace-expansion@^5.0.5': 5.0.9
+  fast-uri: 3.1.5
+  hono: 4.13.1
+  ip-address: 10.5.0
+  'js-yaml@^3.13.0': 3.15.1
+  'js-yaml@^4.1.1': 4.3.1
+  lodash-es: 4.18.1
+  'nanoid@^3.3.8': 3.3.18
+  postcss: 8.5.26
+  'protobufjs@^7': 7.6.5
+  'undici@^7': 7.29.0
+
+peerDependencyRules:
+  allowedVersions:
+    '@react-scan/vite-plugin-react-scan>vite': '7'
