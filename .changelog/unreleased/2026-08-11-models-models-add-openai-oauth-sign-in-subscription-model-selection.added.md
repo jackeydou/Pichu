@@ -1,0 +1,1 @@
+- Models: add OpenAI OAuth sign-in, subscription model selection, and GPT Image 2 access without a separate API key.

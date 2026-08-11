@@ -1,7 +1,7 @@
 import { useI18n } from '@renderer/lib/i18n'
 import { useSettingsStore } from '@renderer/stores/settings-store'
 import { Check, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   MODEL_API_SPECS,
   type ModelApiSpec,
@@ -10,6 +10,7 @@ import {
 } from '../../../../shared/model-config'
 import { ImageGenerationModelSection } from './ImageGenerationModelSection'
 import { SettingsDialog, SettingsDialogCancel } from './SettingsDialog'
+import { SubscriptionPlansSection } from './SubscriptionPlansSection'
 import {
   SettingsButton,
   SettingsCard,
@@ -28,7 +29,8 @@ const EMPTY_MODEL: UserModelConfig = {
   contextWindow: 128_000,
   maxTokens: 16_384,
   reasoning: false,
-  supportsImages: false
+  supportsImages: false,
+  source: 'custom'
 }
 
 function editableModel(model?: UserModelSummary): UserModelConfig {
@@ -47,13 +49,24 @@ export function ModelsTab(): React.JSX.Element {
   const [draft, setDraft] = useState<UserModelConfig>(EMPTY_MODEL)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [refreshVersion, setRefreshVersion] = useState(0)
 
-  useEffect(() => {
+  const loadModels = useCallback((): void => {
     void window.api.models
       .list()
       .then(setModels)
       .catch((value) => setError(value instanceof Error ? value.message : String(value)))
   }, [])
+
+  useEffect(() => {
+    loadModels()
+  }, [loadModels])
+
+  const handleOAuthModelsChanged = (): void => {
+    loadModels()
+    setRefreshVersion((value) => value + 1)
+    void loadSettings()
+  }
 
   const openEditor = (model: UserModelSummary | null): void => {
     setEditing(model)
@@ -131,23 +144,29 @@ export function ModelsTab(): React.JSX.Element {
                       {model.id} · {t(`models.api.${model.api}`)} · {model.baseUrl}
                     </span>
                   </button>
-                  <div className="flex gap-1">
-                    <SettingsButton
-                      className="px-2"
-                      onClick={() => openEditor(model)}
-                      aria-label={t('models.edit')}
-                    >
-                      <Pencil className="size-3.5" />
-                    </SettingsButton>
-                    <SettingsButton
-                      className="px-2"
-                      variant="danger"
-                      onClick={() => void remove(model)}
-                      aria-label={t('models.delete')}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </SettingsButton>
-                  </div>
+                  {model.source === 'custom' ? (
+                    <div className="flex gap-1">
+                      <SettingsButton
+                        className="px-2"
+                        onClick={() => openEditor(model)}
+                        aria-label={t('models.edit')}
+                      >
+                        <Pencil className="size-3.5" />
+                      </SettingsButton>
+                      <SettingsButton
+                        className="px-2"
+                        variant="danger"
+                        onClick={() => void remove(model)}
+                        aria-label={t('models.delete')}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </SettingsButton>
+                    </div>
+                  ) : (
+                    <span className="rounded-full bg-foreground/6 px-2 py-1 text-[11px] text-muted-foreground">
+                      {t('models.subscriptions.managed')}
+                    </span>
+                  )}
                 </div>
               )
             })
@@ -158,7 +177,9 @@ export function ModelsTab(): React.JSX.Element {
         ) : null}
       </SettingsSection>
 
-      <ImageGenerationModelSection />
+      <SubscriptionPlansSection onModelsChanged={handleOAuthModelsChanged} />
+
+      <ImageGenerationModelSection key={refreshVersion} />
 
       {editing !== undefined ? (
         <SettingsDialog
@@ -203,10 +224,12 @@ export function ModelsTab(): React.JSX.Element {
                 className="mt-1 w-full"
                 value={draft.api}
                 onChange={(api) => setDraft({ ...draft, api })}
-                options={MODEL_API_SPECS.map((api) => ({
-                  value: api,
-                  label: t(`models.api.${api}`)
-                }))}
+                options={MODEL_API_SPECS.filter((api) => api !== 'openai-codex-responses').map(
+                  (api) => ({
+                    value: api,
+                    label: t(`models.api.${api}`)
+                  })
+                )}
               />
             </label>
             <label

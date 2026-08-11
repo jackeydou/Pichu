@@ -71,12 +71,16 @@ export function ImageGenerationModelSection(): React.JSX.Element {
       <SettingsCard>
         <SettingsRow
           label={t('models.imageGeneration.model')}
-          description={t('models.imageGeneration.provider')}
+          description={
+            status?.authSource === 'openai-oauth'
+              ? t('models.imageGeneration.providerOAuth')
+              : t('models.imageGeneration.provider')
+          }
         >
           <div className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
             <Image className="size-3.5" />
             <span className="font-mono">gpt-image-2</span>
-            {status?.hasApiKey ? (
+            {status?.enabled ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-foreground/6 px-2 py-0.5 text-[11px]">
                 <Check className="size-3" /> {t('models.imageGeneration.enabled')}
               </span>
@@ -86,9 +90,11 @@ export function ImageGenerationModelSection(): React.JSX.Element {
         <SettingsRow
           label={t('models.imageGeneration.apiKey')}
           description={
-            status?.hasApiKey
-              ? t('models.imageGeneration.apiKeyConfigured')
-              : t('models.imageGeneration.apiKeyRequired')
+            status?.authSource === 'openai-oauth'
+              ? t('models.imageGeneration.oauthActive')
+              : status?.hasApiKey
+                ? t('models.imageGeneration.apiKeyConfigured')
+                : t('models.imageGeneration.apiKeyOptional')
           }
           className="items-start"
         >
