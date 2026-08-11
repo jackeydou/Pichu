@@ -7,7 +7,7 @@ import { deflateSync, inflateSync } from 'node:zlib'
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const packageDir = resolve(scriptDir, '..')
 const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
-const defaultSource = resolve(packageDir, 'resources/pichu-mark.png')
+const defaultSource = resolve(packageDir, 'resources/icon.png')
 const defaultOutput = resolve(packageDir, 'resources/pichu-menu-barTemplate.png')
 
 function parseArgs() {
@@ -156,7 +156,7 @@ function decodePng(buffer) {
     pixels[outputOffset + 1] = green
     pixels[outputOffset + 2] = blue
     pixels[outputOffset + 3] =
-      colorType === 6 ? decodedPixels[sourceOffset + 3] : Math.max(red, green, blue)
+      colorType === 6 ? decodedPixels[sourceOffset + 3] : 255 - Math.round((red + green + blue) / 3)
   }
 
   return { width, height, pixels }
