@@ -1,0 +1,1 @@
+- Menu bar: Use the latest Pichu ear icon.
