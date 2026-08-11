@@ -1,6 +1,6 @@
 import { useI18n } from '@renderer/lib/i18n'
 import { useState } from 'react'
-import pichuMark from '../../../../../resources/pichu-mark.png?asset'
+import pichuHomeMark from '../../../../../resources/pichu-home-mark.png?asset'
 
 export function EmptyChatLogo(): React.JSX.Element {
   const { t } = useI18n()
@@ -22,13 +22,13 @@ export function EmptyChatLogo(): React.JSX.Element {
           alt=""
           className="pichu-empty-chat-ear pichu-empty-chat-ear-left"
           draggable={false}
-          src={pichuMark}
+          src={pichuHomeMark}
         />
         <img
           alt=""
           className="pichu-empty-chat-ear pichu-empty-chat-ear-right"
           draggable={false}
-          src={pichuMark}
+          src={pichuHomeMark}
         />
       </span>
     </button>

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="apps/pichu-client/resources/pichu-mark.png" alt="Pichu" width="112" />
+  <img src="apps/pichu-client/resources/pichu-home-mark.png" alt="Pichu" width="160" />
 </p>
 
 <h1 align="center">Pichu</h1>

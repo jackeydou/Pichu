@@ -1117,63 +1117,58 @@
 @keyframes pichu-left-ear-wiggle {
   0%,
   100% {
-    transform: rotate(0deg);
+    transform: translateY(0) rotate(0deg);
   }
 
-  20% {
-    transform: rotate(8deg);
+  24% {
+    transform: translateY(-2px) rotate(5deg);
   }
 
-  42% {
-    transform: rotate(-6deg);
+  48% {
+    transform: translateY(1px) rotate(-3deg);
   }
 
-  62% {
-    transform: rotate(5deg);
+  70% {
+    transform: translateY(-1px) rotate(2deg);
   }
 
-  80% {
-    transform: rotate(-3deg);
+  86% {
+    transform: translateY(0) rotate(-1deg);
   }
 }
 
 @keyframes pichu-right-ear-wiggle {
   0%,
   100% {
-    transform: rotate(0deg);
+    transform: translateY(0) rotate(0deg);
   }
 
-  20% {
-    transform: rotate(-8deg);
+  24% {
+    transform: translateY(-2px) rotate(-5deg);
   }
 
-  42% {
-    transform: rotate(6deg);
+  48% {
+    transform: translateY(1px) rotate(3deg);
   }
 
-  62% {
-    transform: rotate(-5deg);
+  70% {
+    transform: translateY(-1px) rotate(-2deg);
   }
 
-  80% {
-    transform: rotate(3deg);
+  86% {
+    transform: translateY(0) rotate(1deg);
   }
 }
 
 .pichu-empty-chat-logo {
   appearance: none;
-  aspect-ratio: 1;
+  aspect-ratio: 2 / 1;
   border: 0;
   border-radius: 28%;
   background: transparent;
   cursor: pointer;
   filter: drop-shadow(0 5px 9px rgb(0 0 0 / 12%));
   padding: 0;
-  transform-origin: center bottom;
-  transition:
-    filter 180ms ease,
-    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: transform;
 }
 
 .pichu-empty-chat-logo:focus-visible {
@@ -1181,18 +1176,9 @@
   outline-offset: -1.25rem;
 }
 
-.pichu-empty-chat-logo:hover {
-  filter: drop-shadow(0 8px 12px rgb(0 0 0 / 18%));
-  transform: translateY(-3px) scale(1.02);
-}
-
-.pichu-empty-chat-logo:active {
-  transform: translateY(-1px) scale(0.99);
-}
-
 .pichu-empty-chat-logo-art {
   position: relative;
-  aspect-ratio: 1;
+  aspect-ratio: 2 / 1;
 }
 
 .pichu-empty-chat-ear {
@@ -1203,25 +1189,34 @@
   height: 100%;
   object-fit: contain;
   pointer-events: none;
+  transition: filter 180ms ease;
   will-change: transform;
 }
 
 .pichu-empty-chat-ear-left {
   clip-path: inset(0 50% 0 0);
-  transform-origin: 47% 61%;
+  transform-origin: 42% 82%;
 }
 
 .pichu-empty-chat-ear-right {
   clip-path: inset(0 0 0 50%);
-  transform-origin: 53% 61%;
+  transform-origin: 58% 82%;
 }
 
 .pichu-empty-chat-logo-art.is-animated .pichu-empty-chat-ear-left {
-  animation: pichu-left-ear-wiggle 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: pichu-left-ear-wiggle 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .pichu-empty-chat-logo-art.is-animated .pichu-empty-chat-ear-right {
-  animation: pichu-right-ear-wiggle 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: pichu-right-ear-wiggle 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+html[data-theme="dark"] .pichu-empty-chat-logo {
+  filter: drop-shadow(0 5px 9px rgb(255 255 255 / 10%));
+}
+
+html[data-theme="dark"] .pichu-empty-chat-ear {
+  filter: invert(1);
 }
 
 .pichu-activity-shimmer {
@@ -1286,14 +1281,6 @@ html[data-theme="dark"] .pichu-activity-shimmer {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pichu-empty-chat-logo {
-    transition: none;
-  }
-
-  .pichu-empty-chat-logo:hover {
-    transform: none;
-  }
-
   .pichu-empty-chat-logo-art.is-animated .pichu-empty-chat-ear-left,
   .pichu-empty-chat-logo-art.is-animated .pichu-empty-chat-ear-right {
     animation: none;

@@ -1,0 +1,1 @@
+- Branding: refresh the app, home screen, and README with the new wide-ear mark.
