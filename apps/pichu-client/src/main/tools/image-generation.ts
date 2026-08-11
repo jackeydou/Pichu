@@ -4,12 +4,17 @@ import { basename, extname, isAbsolute, join } from 'node:path'
 import type { AgentTool } from '@earendil-works/pi-agent-core'
 import { Type } from 'typebox'
 
-import { resolveUserModelConfig } from '../stores/model-config-store.js'
+import { IMAGE_GENERATION_MODEL } from '../../shared/image-generation-config.js'
+import {
+  getImageGenerationApiKey,
+  hasImageGenerationApiKey
+} from '../stores/image-generation-config-store.js'
 
 const DEFAULT_SIZE = 'auto'
 const DEFAULT_QUALITY = 'auto'
 const DEFAULT_COUNT = 1
 const MAX_COUNT = 4
+const OPENAI_API_BASE_URL = 'https://api.openai.com/v1'
 const IMAGE_SIZE_MIN_PIXELS = 655_360
 const IMAGE_SIZE_MAX_PIXELS = 8_294_400
 const IMAGE_SIZE_MAX_EDGE = 3840
@@ -82,11 +87,12 @@ function imageRequestConfig(path: 'generations' | 'edits'): {
   model: string
   headers: Record<string, string>
 } {
-  const config = resolveUserModelConfig()
+  const apiKey = getImageGenerationApiKey()
+  if (!apiKey) throw new Error('Image generation is not configured')
   return {
-    endpoint: `${config.baseUrl}/images/${path}`,
-    model: config.id,
-    headers: config.apiKey ? { Authorization: `Bearer ${config.apiKey}` } : {}
+    endpoint: `${OPENAI_API_BASE_URL}/images/${path}`,
+    model: IMAGE_GENERATION_MODEL,
+    headers: { Authorization: `Bearer ${apiKey}` }
   }
 }
 
@@ -451,4 +457,8 @@ export function createImageGenerationTool(cwd: string): AgentTool<typeof imageGe
       }
     }
   }
+}
+
+export function createImageGenerationToolIfConfigured(cwd: string): AgentTool | undefined {
+  return hasImageGenerationApiKey() ? createImageGenerationTool(cwd) : undefined
 }

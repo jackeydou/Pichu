@@ -6,21 +6,22 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const testDir = dirname(fileURLToPath(import.meta.url))
 
-async function loadImageGenerationForTest() {
+async function loadImageGenerationForTest(configured = false) {
   const moduleDir = mkdtempSync(join(testDir, 'image-generation-test-'))
-  const modelConfigStorePath = join(moduleDir, 'model-config-store.ts')
+  const configStorePath = join(moduleDir, 'image-generation-config-store.ts')
+  const sharedConfigPath = join(moduleDir, 'image-generation-config.ts')
   const imageGenerationPath = join(moduleDir, 'image-generation-under-test.ts')
   const sourcePath = new URL('../../src/main/tools/image-generation.ts', import.meta.url)
-  const source = readFileSync(sourcePath, 'utf8').replace(
-    '../stores/model-config-store.js',
-    './model-config-store.ts'
-  )
+  const source = readFileSync(sourcePath, 'utf8')
+    .replace('../stores/image-generation-config-store.js', './image-generation-config-store.ts')
+    .replace('../../shared/image-generation-config.js', './image-generation-config.ts')
 
   writeFileSync(
-    modelConfigStorePath,
-    "export function resolveUserModelConfig() { throw new Error('not configured') }\n",
+    configStorePath,
+    `export function getImageGenerationApiKey() { return ${configured ? "'test-key'" : 'undefined'} }\nexport function hasImageGenerationApiKey() { return ${configured} }\n`,
     'utf8'
   )
+  writeFileSync(sharedConfigPath, "export const IMAGE_GENERATION_MODEL = 'gpt-image-2'\n", 'utf8')
   writeFileSync(imageGenerationPath, source, 'utf8')
 
   try {
@@ -29,6 +30,14 @@ async function loadImageGenerationForTest() {
     rmSync(moduleDir, { recursive: true, force: true })
   }
 }
+
+test('only creates the image generation tool when its API key is configured', async () => {
+  const unconfigured = await loadImageGenerationForTest(false)
+  const configured = await loadImageGenerationForTest(true)
+
+  assert.equal(unconfigured.createImageGenerationToolIfConfigured('/tmp'), undefined)
+  assert.equal(configured.createImageGenerationToolIfConfigured('/tmp')?.name, 'image_generate')
+})
 
 test('normalizes image generation size aliases to mainstream high-resolution presets', async () => {
   const { normalizeImageGenerationSize } = await loadImageGenerationForTest()

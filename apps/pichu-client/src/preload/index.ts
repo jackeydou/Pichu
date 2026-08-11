@@ -22,6 +22,7 @@ import type {
   HumanInputRequestForRenderer,
   SubmitHumanInputPayload
 } from '../shared/human-input.js'
+import type { ImageGenerationConfigStatus } from '../shared/image-generation-config.js'
 import type { MessagePart } from '../shared/message-parts.js'
 import type { UserModelConfig } from '../shared/model-config.js'
 import type { PichuThinkingLevel } from '../shared/model-settings.js'
@@ -102,6 +103,14 @@ const api = {
     save: (model: UserModelConfig, previousId?: string) =>
       ipcRenderer.invoke('models:save', { model, previousId }),
     delete: (modelId: string) => ipcRenderer.invoke('models:delete', modelId)
+  },
+  imageGenerationConfig: {
+    get: (): Promise<ImageGenerationConfigStatus> =>
+      ipcRenderer.invoke('image-generation-config:get'),
+    save: (apiKey: string): Promise<ImageGenerationConfigStatus> =>
+      ipcRenderer.invoke('image-generation-config:save', apiKey),
+    clear: (): Promise<ImageGenerationConfigStatus> =>
+      ipcRenderer.invoke('image-generation-config:clear')
   },
   settings: {
     get: () => ipcRenderer.invoke('settings:get'),

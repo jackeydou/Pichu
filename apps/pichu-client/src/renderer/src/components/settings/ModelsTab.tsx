@@ -8,6 +8,7 @@ import {
   type UserModelConfig,
   type UserModelSummary
 } from '../../../../shared/model-config'
+import { ImageGenerationModelSection } from './ImageGenerationModelSection'
 import { SettingsDialog, SettingsDialogCancel } from './SettingsDialog'
 import {
   SettingsButton,
@@ -85,7 +86,7 @@ export function ModelsTab(): React.JSX.Element {
   }
 
   return (
-    <>
+    <div className="space-y-10">
       <SettingsSection
         title={t('models.section.title')}
         description={t('models.section.description')}
@@ -156,6 +157,8 @@ export function ModelsTab(): React.JSX.Element {
           <p className="mt-3 text-[12.5px] text-destructive">{error}</p>
         ) : null}
       </SettingsSection>
+
+      <ImageGenerationModelSection />
 
       {editing !== undefined ? (
         <SettingsDialog
@@ -275,6 +278,6 @@ export function ModelsTab(): React.JSX.Element {
           </div>
         </SettingsDialog>
       ) : null}
-    </>
+    </div>
   )
 }

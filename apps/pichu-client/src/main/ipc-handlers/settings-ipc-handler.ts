@@ -1,5 +1,10 @@
 import { ipcMain } from 'electron'
 import {
+  clearImageGenerationApiKey,
+  getImageGenerationConfigStatus,
+  saveImageGenerationApiKey
+} from '../stores/image-generation-config-store.js'
+import {
   deleteUserModelConfig,
   listUserModelSummaries,
   saveUserModelConfig
@@ -29,4 +34,9 @@ export function registerSettingsIpcHandlers(): void {
     saveUserModelConfig(input?.model, input?.previousId)
   )
   ipcMain.handle('models:delete', (_, modelId: unknown) => deleteUserModelConfig(modelId))
+  ipcMain.handle('image-generation-config:get', () => getImageGenerationConfigStatus())
+  ipcMain.handle('image-generation-config:save', (_, apiKey: unknown) =>
+    saveImageGenerationApiKey(apiKey)
+  )
+  ipcMain.handle('image-generation-config:clear', () => clearImageGenerationApiKey())
 }

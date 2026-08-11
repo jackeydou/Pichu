@@ -22,7 +22,7 @@ import { createComputerUseTools } from './computer-use/index.js'
 import { createCronJobTool } from './cron.js'
 import { createEmbeddedBrowserTools } from './embedded-browser.js'
 import { createAskUserInputTool } from './human-input.js'
-import { createImageGenerationTool } from './image-generation.js'
+import { createImageGenerationToolIfConfigured } from './image-generation.js'
 import { createSopTools } from './sop.js'
 import { createWorkbenchTools } from './workbench.js'
 
@@ -313,7 +313,7 @@ export async function createToolsForCwd(
         applyProfileRequiredApproval(tool, 'Save an SOP graph in Pichu')
       )
     : []
-  const imageGenerationTool = applyProfileApproval(createImageGenerationTool(cwd), cwd)
+  const imageGenerationTool = createImageGenerationToolIfConfigured(cwd)
 
   return [
     createAskUserInputTool({
@@ -332,7 +332,7 @@ export async function createToolsForCwd(
       getFallbackModelId: options.getFallbackModelId
     }),
     ...(options.includeCronJobTool === false ? [] : [cronJobTool]),
-    imageGenerationTool,
+    ...(imageGenerationTool ? [applyProfileApproval(imageGenerationTool, cwd)] : []),
     ...pluginMcpTools,
     ...sopTools,
     ...createWorkbenchTools(cwd),

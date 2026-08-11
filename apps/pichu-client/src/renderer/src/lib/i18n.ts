@@ -583,6 +583,22 @@ const EN = {
   'models.api.openai-completions': 'OpenAI Chat Completions',
   'models.api.anthropic-messages': 'Anthropic Messages',
   'models.api.google-generative-ai': 'Google Generative AI',
+  'models.imageGeneration.title': 'Image generation',
+  'models.imageGeneration.description':
+    'Add an OpenAI API key to let the agent generate and edit images. The image tool stays unavailable until configured.',
+  'models.imageGeneration.model': 'Image model',
+  'models.imageGeneration.provider': 'OpenAI image generation API',
+  'models.imageGeneration.enabled': 'Enabled',
+  'models.imageGeneration.apiKey': 'OpenAI API key',
+  'models.imageGeneration.apiKeyRequired': 'Required to enable image generation for the agent.',
+  'models.imageGeneration.apiKeyConfigured':
+    'A key is saved locally. Enter a new key to replace it.',
+  'models.imageGeneration.apiKeyPlaceholder': 'sk-...',
+  'models.imageGeneration.apiKeyReplace': 'Enter a new key to replace the saved key',
+  'models.imageGeneration.saved': 'Image generation is enabled.',
+  'models.imageGeneration.clear': 'Remove image generation API key',
+  'models.imageGeneration.clearConfirm':
+    'Remove the image generation API key? The agent will no longer have access to image generation.',
 
   'archivedChats.title': 'Archived chats',
   'archivedChats.search': 'Search archived chats',
@@ -2128,6 +2144,20 @@ const ZH_CN: Record<keyof typeof EN, string> = {
   'models.api.openai-completions': 'OpenAI Chat Completions',
   'models.api.anthropic-messages': 'Anthropic Messages',
   'models.api.google-generative-ai': 'Google Generative AI',
+  'models.imageGeneration.title': '生图模型',
+  'models.imageGeneration.description':
+    '配置 OpenAI API Key 后，Agent 才能生成和编辑图片。未配置时不会启用生图工具。',
+  'models.imageGeneration.model': '生图模型',
+  'models.imageGeneration.provider': 'OpenAI 图片生成 API',
+  'models.imageGeneration.enabled': '已启用',
+  'models.imageGeneration.apiKey': 'OpenAI API Key',
+  'models.imageGeneration.apiKeyRequired': '配置后才会为 Agent 启用生图工具。',
+  'models.imageGeneration.apiKeyConfigured': 'Key 已保存在本机。输入新 Key 可替换。',
+  'models.imageGeneration.apiKeyPlaceholder': 'sk-...',
+  'models.imageGeneration.apiKeyReplace': '输入新 Key 以替换已保存的 Key',
+  'models.imageGeneration.saved': '生图工具已启用。',
+  'models.imageGeneration.clear': '删除生图 API Key',
+  'models.imageGeneration.clearConfirm': '删除生图 API Key？Agent 将无法再使用生图工具。',
 
   'archivedChats.title': '已归档聊天',
   'archivedChats.search': '搜索已归档聊天',

@@ -35,6 +35,7 @@ import type {
   DiagnosticsExportResult
 } from '../shared/diagnostics.js'
 import type { LocalFeatureGateKey, LocalFeatureGateState } from '../shared/feature-gates.js'
+import type { ImageGenerationConfigStatus } from '../shared/image-generation-config.js'
 import type {
   PichuReasoningMenuLevel,
   PichuThinkingLevel,
@@ -981,6 +982,11 @@ export type PichuApi = {
     list: () => Promise<UserModelSummary[]>
     save: (model: UserModelConfig, previousId?: string) => Promise<UserModelSummary[]>
     delete: (modelId: string) => Promise<UserModelSummary[]>
+  }
+  imageGenerationConfig: {
+    get: () => Promise<ImageGenerationConfigStatus>
+    save: (apiKey: string) => Promise<ImageGenerationConfigStatus>
+    clear: () => Promise<ImageGenerationConfigStatus>
   }
   settings: {
     get: () => Promise<SettingsPayload>
