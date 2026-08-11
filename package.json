@@ -14,7 +14,7 @@
     "lint:fix": "biome check --write",
     "format": "biome format --write",
     "release:check": "node scripts/release-check.mjs",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "pnpm --filter pichu-client test:unit"
   },
   "keywords": [],
   "author": "",
