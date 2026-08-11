@@ -5,9 +5,10 @@ import type { AgentTool } from '@earendil-works/pi-agent-core'
 import { Type } from 'typebox'
 
 import { IMAGE_GENERATION_MODEL } from '../../shared/image-generation-config.js'
+import { getOpenAIOAuthRequestAuth } from '../openai-oauth.js'
 import {
   getImageGenerationApiKey,
-  hasImageGenerationApiKey
+  getImageGenerationConfigStatus
 } from '../stores/image-generation-config-store.js'
 
 const DEFAULT_SIZE = 'auto'
@@ -15,6 +16,7 @@ const DEFAULT_QUALITY = 'auto'
 const DEFAULT_COUNT = 1
 const MAX_COUNT = 4
 const OPENAI_API_BASE_URL = 'https://api.openai.com/v1'
+const OPENAI_CODEX_API_BASE_URL = 'https://chatgpt.com/backend-api/codex'
 const IMAGE_SIZE_MIN_PIXELS = 655_360
 const IMAGE_SIZE_MAX_PIXELS = 8_294_400
 const IMAGE_SIZE_MAX_EDGE = 3840
@@ -82,11 +84,24 @@ const imageGenerationSchema = Type.Object({
   )
 })
 
-function imageRequestConfig(path: 'generations' | 'edits'): {
+async function imageRequestConfig(path: 'generations' | 'edits'): Promise<{
   endpoint: string
   model: string
   headers: Record<string, string>
-} {
+}> {
+  const status = getImageGenerationConfigStatus()
+  if (status.authSource === 'openai-oauth') {
+    const auth = await getOpenAIOAuthRequestAuth()
+    return {
+      endpoint: `${OPENAI_CODEX_API_BASE_URL}/images/${path}`,
+      model: IMAGE_GENERATION_MODEL,
+      headers: {
+        Authorization: `Bearer ${auth.accessToken}`,
+        ...(auth.accountId ? { 'ChatGPT-Account-Id': auth.accountId } : {}),
+        originator: 'pichu'
+      }
+    }
+  }
   const apiKey = getImageGenerationApiKey()
   if (!apiKey) throw new Error('Image generation is not configured')
   return {
@@ -261,7 +276,7 @@ async function requestImageGeneration(params: {
   quality: string
   signal?: AbortSignal
 }): Promise<GeneratedImage[]> {
-  const request = imageRequestConfig('generations')
+  const request = await imageRequestConfig('generations')
   const response = await fetch(request.endpoint, {
     method: 'POST',
     headers: {
@@ -321,7 +336,7 @@ async function requestImageEdit(params: {
   if (params.maskPath) {
     appendImageFile(form, 'mask', params.maskPath)
   }
-  const request = imageRequestConfig('edits')
+  const request = await imageRequestConfig('edits')
   form.append('model', request.model)
   form.append('prompt', params.prompt)
   form.append('n', String(params.count))
@@ -460,5 +475,5 @@ export function createImageGenerationTool(cwd: string): AgentTool<typeof imageGe
 }
 
 export function createImageGenerationToolIfConfigured(cwd: string): AgentTool | undefined {
-  return hasImageGenerationApiKey() ? createImageGenerationTool(cwd) : undefined
+  return getImageGenerationConfigStatus().enabled ? createImageGenerationTool(cwd) : undefined
 }

@@ -43,6 +43,7 @@ import type {
   SessionModelPreference
 } from '../shared/model-settings.js'
 import type { UserModelConfig, UserModelSummary } from '../shared/model-config.js'
+import type { OpenAIOAuthStatus } from '../shared/openai-oauth.js'
 import type {
   CancelHumanInputPayload,
   ContinueAfterHumanInputPayload,
@@ -982,6 +983,12 @@ export type PichuApi = {
     list: () => Promise<UserModelSummary[]>
     save: (model: UserModelConfig, previousId?: string) => Promise<UserModelSummary[]>
     delete: (modelId: string) => Promise<UserModelSummary[]>
+  }
+  openAIOAuth: {
+    get: () => Promise<OpenAIOAuthStatus>
+    login: () => Promise<OpenAIOAuthStatus>
+    logout: () => Promise<OpenAIOAuthStatus>
+    setEnabledModels: (modelIds: string[]) => Promise<OpenAIOAuthStatus>
   }
   imageGenerationConfig: {
     get: () => Promise<ImageGenerationConfigStatus>

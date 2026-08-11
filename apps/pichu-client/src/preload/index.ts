@@ -26,6 +26,7 @@ import type { ImageGenerationConfigStatus } from '../shared/image-generation-con
 import type { MessagePart } from '../shared/message-parts.js'
 import type { UserModelConfig } from '../shared/model-config.js'
 import type { PichuThinkingLevel } from '../shared/model-settings.js'
+import type { OpenAIOAuthStatus } from '../shared/openai-oauth.js'
 import type {
   PluginAdminCancelUploadInput,
   PluginAdminLocalVersionInput,
@@ -103,6 +104,13 @@ const api = {
     save: (model: UserModelConfig, previousId?: string) =>
       ipcRenderer.invoke('models:save', { model, previousId }),
     delete: (modelId: string) => ipcRenderer.invoke('models:delete', modelId)
+  },
+  openAIOAuth: {
+    get: (): Promise<OpenAIOAuthStatus> => ipcRenderer.invoke('openai-oauth:get'),
+    login: (): Promise<OpenAIOAuthStatus> => ipcRenderer.invoke('openai-oauth:login'),
+    logout: (): Promise<OpenAIOAuthStatus> => ipcRenderer.invoke('openai-oauth:logout'),
+    setEnabledModels: (modelIds: string[]): Promise<OpenAIOAuthStatus> =>
+      ipcRenderer.invoke('openai-oauth:set-enabled-models', modelIds)
   },
   imageGenerationConfig: {
     get: (): Promise<ImageGenerationConfigStatus> =>

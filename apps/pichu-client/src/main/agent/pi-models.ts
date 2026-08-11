@@ -22,6 +22,7 @@ import type { UserModelConfig } from '../../shared/model-config.js'
 import type { PichuReasoningMenuLevel, PichuThinkingLevel } from '../../shared/model-settings.js'
 import { writeChatDiagnosticEvent } from '../diagnostics.js'
 import { ModelRequestLimiter } from '../model-request-limiter.js'
+import { getOpenAIOAuthRequestAuth } from '../openai-oauth.js'
 import { getUserModelConfigs, resolveUserModelConfig } from '../stores/model-config-store.js'
 import {
   createProviderDiagnosticsTracker,
@@ -199,7 +200,7 @@ export function buildPichuModel(config: PichuModelConfig): Model<Api> {
   }
 }
 
-function apiKeyForModelId(modelId: string): string | undefined {
+function storedApiKeyForModelId(modelId: string): string | undefined {
   try {
     return resolveUserModelConfig(modelId).apiKey || undefined
   } catch {
@@ -207,14 +208,17 @@ function apiKeyForModelId(modelId: string): string | undefined {
   }
 }
 
+async function requestApiKeyForModel(model: Model<Api>): Promise<string | undefined> {
+  if (model.api === 'openai-codex-responses') {
+    return (await getOpenAIOAuthRequestAuth()).accessToken
+  }
+  return storedApiKeyForModelId(model.id)
+}
+
 export function createPichuStreamFn(): StreamFn {
   return (model, context, options) => {
-    const apiKey = apiKeyForModelId(model.id)
     const stream = createAssistantMessageEventStream()
-    void pipeLimitedModelStream(stream, model, context, {
-      ...(options ?? {}),
-      ...(apiKey ? { apiKey } : {})
-    })
+    void pipeLimitedModelStream(stream, model, context, options ?? {})
     return stream
   }
 }
@@ -225,7 +229,7 @@ export async function completePichuText(
   options?: PichuModelRequestOptions
 ): Promise<string> {
   const model = buildPichuModel(config)
-  const apiKey = apiKeyForModelId(model.id)
+  const apiKey = await requestApiKeyForModel(model)
   const { source = 'completion', ...baseRequestOptions } = options ?? {}
   const requestOptions = baseRequestOptions
   const diagnosticsTracker = createProviderDiagnosticsTracker()
@@ -382,12 +386,14 @@ async function pipeLimitedModelStream(
     context.tools?.length ?? 0
   )
   try {
+    const apiKey = await requestApiKeyForModel(model)
+    const resolvedOptions = { ...optionsWithDiagnostics, ...(apiKey ? { apiKey } : {}) }
     release = await modelRequestLimiter.acquire(options.signal)
     const result = await pipeModelStreamWithReconnect(
       target,
       model,
       context,
-      recorder.wrapOptions(optionsWithDiagnostics),
+      recorder.wrapOptions(resolvedOptions),
       recorder
     )
     recorder.recordRequestEnd(result.message, {

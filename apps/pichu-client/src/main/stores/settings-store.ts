@@ -16,12 +16,17 @@ import {
 import type { MessageAttachment } from '../../shared/attachments.js'
 import { isDebugPackage } from '../../shared/build-mode.js'
 import type { DevAppInstanceInfo } from '../../shared/dev-app-instance.js'
+import { IMAGE_GENERATION_MODEL } from '../../shared/image-generation-config.js'
 import {
   type MessagePart,
   normalizeMessageParts,
   parseMessagePartJson,
   stringifyMessagePart
 } from '../../shared/message-parts.js'
+import {
+  configuredModelIdsFromStoredSettings,
+  resolveConfiguredModelId
+} from '../../shared/model-config.js'
 import {
   DEFAULT_PICHU_THINKING_LEVEL,
   normalizePichuThinkingLevel,
@@ -238,21 +243,12 @@ export function getAgentTrustProfile(): AgentTrustProfile {
 }
 
 function getConfiguredModelIds(): string[] {
-  const stored = getStoredSetting('userModels')
-  if (!stored) return []
-  try {
-    const models: unknown = JSON.parse(stored)
-    if (!Array.isArray(models)) return []
-    return models
-      .map((model) =>
-        model && typeof model === 'object' && typeof (model as { id?: unknown }).id === 'string'
-          ? (model as { id: string }).id.trim()
-          : ''
-      )
-      .filter(Boolean)
-  } catch {
-    return []
-  }
+  const subscriptionModels = getStoredSetting('openAiOAuthCredential')
+    ? getStoredSetting('openAiOAuthEnabledModels')
+    : undefined
+  return configuredModelIdsFromStoredSettings(getStoredSetting('userModels'), subscriptionModels, [
+    IMAGE_GENERATION_MODEL
+  ])
 }
 
 export function setStoredSetting(key: string, value: string): void {
@@ -324,10 +320,7 @@ export function getSettingsForRenderer(): {
   const projectSortKey = getStoredSetting('projectSortKey')
   const configuredModelIds = getConfiguredModelIds()
   const storedModel = getStoredSetting('model')?.trim()
-  const model =
-    storedModel && configuredModelIds.includes(storedModel)
-      ? storedModel
-      : (configuredModelIds[0] ?? '')
+  const model = resolveConfiguredModelId(storedModel, configuredModelIds)
   const thinkingLevel = getStoredSetting('thinkingLevel')
   const storedWorkingDirectory = getStoredSetting('workingDirectory')?.trim()
   const resolvedWorkingDirectory = storedWorkingDirectory

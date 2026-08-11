@@ -1,4 +1,6 @@
-import { ipcMain } from 'electron'
+import { ipcMain, shell } from 'electron'
+import type { OpenAIOAuthStatus } from '../../shared/openai-oauth.js'
+import { hasOpenAIOAuthCredential, loginOpenAIOAuth, logoutOpenAIOAuth } from '../openai-oauth.js'
 import {
   clearImageGenerationApiKey,
   getImageGenerationConfigStatus,
@@ -6,8 +8,10 @@ import {
 } from '../stores/image-generation-config-store.js'
 import {
   deleteUserModelConfig,
+  listOpenAIOAuthModels,
   listUserModelSummaries,
-  saveUserModelConfig
+  saveUserModelConfig,
+  setOpenAIOAuthEnabledModels
 } from '../stores/model-config-store.js'
 import {
   applySettingsPatch,
@@ -17,6 +21,11 @@ import {
 import { setCursorOriginHint } from '../tools/computer-use/cursor-overlay.js'
 
 export function registerSettingsIpcHandlers(): void {
+  const openAIOAuthStatus = (): OpenAIOAuthStatus => ({
+    signedIn: hasOpenAIOAuthCredential(),
+    models: listOpenAIOAuthModels()
+  })
+
   ipcMain.handle('settings:get', () => getSettingsForRenderer())
 
   // Cursor-overlay origin hint: the renderer reports the chat input's
@@ -34,6 +43,20 @@ export function registerSettingsIpcHandlers(): void {
     saveUserModelConfig(input?.model, input?.previousId)
   )
   ipcMain.handle('models:delete', (_, modelId: unknown) => deleteUserModelConfig(modelId))
+  ipcMain.handle('openai-oauth:get', openAIOAuthStatus)
+  ipcMain.handle('openai-oauth:login', async () => {
+    await loginOpenAIOAuth((url) => shell.openExternal(url))
+    return openAIOAuthStatus()
+  })
+  ipcMain.handle('openai-oauth:logout', async () => {
+    setOpenAIOAuthEnabledModels([])
+    await logoutOpenAIOAuth()
+    return openAIOAuthStatus()
+  })
+  ipcMain.handle('openai-oauth:set-enabled-models', (_, modelIds: unknown) => {
+    setOpenAIOAuthEnabledModels(modelIds)
+    return openAIOAuthStatus()
+  })
   ipcMain.handle('image-generation-config:get', () => getImageGenerationConfigStatus())
   ipcMain.handle('image-generation-config:save', (_, apiKey: unknown) =>
     saveImageGenerationApiKey(apiKey)
