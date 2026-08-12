@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { EventEmitter } from 'node:events'
 import { existsSync, readFileSync, rmSync } from 'node:fs'
 import test from 'node:test'
@@ -47,6 +47,33 @@ function waitForChildClose(child) {
 
 function shellQuote(value) {
   return `'${value.replaceAll("'", "'\\''")}'`
+}
+
+function runIsolatedPollingScript({ closeBeforePoll }) {
+  const moduleUrl = new URL('../../src/main/background-terminals.ts', import.meta.url).href
+  const script = `
+import { EventEmitter } from 'node:events'
+const backgroundTerminals = await import(${JSON.stringify(`${moduleUrl}?isolated=${closeBeforePoll}`)})
+const child = new EventEmitter()
+child.pid = 2147483000
+child.kill = () => true
+const id = backgroundTerminals.registerBackgroundTerminal({
+  child,
+  command: 'isolated-poll',
+  cwd: '/tmp',
+  retainOnExit: true
+})
+if (${JSON.stringify(closeBeforePoll)}) child.emit('close', 0, null)
+const snapshot = await backgroundTerminals.pollBackgroundTerminalOutput(id, {
+  yieldTimeMs: 25
+})
+console.log(JSON.stringify(snapshot))
+`
+  return spawnSync(
+    process.execPath,
+    ['--experimental-strip-types', '--input-type=module', '--eval', script],
+    { encoding: 'utf8', timeout: 5000 }
+  )
 }
 
 test('background terminals list only registered running commands', () => {
@@ -122,6 +149,15 @@ test('background terminal stdin only writes arbitrary input to PTY sessions', ()
   assert.deepEqual(child.killSignals, ['SIGINT'])
 
   child.emit('close', null)
+})
+
+test('background terminal polling keeps awaited timers active', () => {
+  for (const closeBeforePoll of [false, true]) {
+    const result = runIsolatedPollingScript({ closeBeforePoll })
+    assert.equal(result.status, 0, result.stderr)
+    const snapshot = JSON.parse(result.stdout)
+    assert.equal(snapshot.running, !closeBeforePoll)
+  }
 })
 
 test('background terminal poll returns exited for short commands with output', async (t) => {

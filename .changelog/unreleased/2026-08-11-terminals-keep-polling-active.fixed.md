@@ -1,0 +1,1 @@
+- Terminals: Prevent command polling from ending early when no other event-loop work is active.
