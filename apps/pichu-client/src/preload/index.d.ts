@@ -8,6 +8,7 @@ import type {
 import type { ArtifactRecord, SaveArtifactRequest } from '../shared/artifacts.js'
 import type { AttachmentInput, MessageAttachment } from '../shared/attachments.js'
 import type { AppHotkeyPayload } from '../shared/app-hotkeys.js'
+import type { AutoUpdateChannel, AutoUpdateState } from '../shared/auto-update.js'
 import type {
   CleanBackgroundTerminalsRequest,
   CleanBackgroundTerminalsResult,
@@ -213,6 +214,7 @@ export type SettingsPayload = {
   computerUseEnabled: boolean
   debugMode: boolean
   language: 'auto' | 'zh-CN' | 'en'
+  autoUpdateChannel: AutoUpdateChannel
   showInMenuBar: boolean
   showModelSwitcher: boolean
   followUpBehavior: 'queue' | 'steer'
@@ -1006,6 +1008,7 @@ export type PichuApi = {
       enableClaudeSkills?: boolean
       debugMode?: boolean
       language?: 'auto' | 'zh-CN' | 'en'
+      autoUpdateChannel?: AutoUpdateChannel
       showInMenuBar?: boolean
       showModelSwitcher?: boolean
       followUpBehavior?: 'queue' | 'steer'
@@ -1366,6 +1369,12 @@ export type PichuApi = {
       input: TerminateBackgroundTerminalRequest
     ) => Promise<TerminateBackgroundTerminalResult>
     clean: (input?: CleanBackgroundTerminalsRequest) => Promise<CleanBackgroundTerminalsResult>
+  }
+  autoUpdate: {
+    getState: () => Promise<AutoUpdateState>
+    check: () => Promise<AutoUpdateState>
+    install: () => Promise<AutoUpdateState>
+    onStateChange: (callback: (state: AutoUpdateState) => void) => () => void
   }
   app: {
     buildInfo: () => Promise<BuildInfo>

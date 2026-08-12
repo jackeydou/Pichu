@@ -107,6 +107,32 @@ MR composes unreleased fragments.
 Public app branding is `Pichu`. Release artifacts should use official names
 such as `Pichu-2026.5.2000.dmg`.
 
+## GitHub Release Publishing
+
+Pushing an approved version tag triggers `.github/workflows/release-macos.yml`.
+The workflow validates that the tag matches `apps/pichu-client/package.json`,
+builds the macOS DMG and ZIP, signs the app with a Developer ID Application
+certificate, notarizes and staples it, verifies the finished bundle, and then
+creates the matching GitHub Release. Beta tags create prereleases.
+
+Configure these GitHub Actions repository secrets before publishing:
+
+- `MAC_CSC_LINK`: base64-encoded Developer ID Application `.p12` certificate.
+- `MAC_CSC_KEY_PASSWORD`: password used when exporting the `.p12` certificate.
+- `APPLE_API_KEY_BASE64`: base64-encoded App Store Connect API key `.p8` file.
+- `APPLE_API_KEY_ID`: App Store Connect API key ID.
+- `APPLE_API_ISSUER`: App Store Connect API issuer ID.
+- `APPLE_TEAM_ID`: Apple Developer team ID.
+
+The release assets include the DMG for manual installation, the ZIP and channel
+metadata required by `electron-updater`, blockmaps, and SHA-256 checksums. The
+packaged app uses the public `jackeydou/Pichu` GitHub Releases feed. Stable and
+beta update channels can be selected in General settings.
+
+Do not upload only an Actions artifact. Actions artifacts expire and are not an
+application update feed. Do not create or move a version tag until the release
+MR is merged and publishing has explicit operator approval.
+
 ## Release Preflight
 
 Before tagging or publishing a release, run the release-maintainer workflow and

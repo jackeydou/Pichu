@@ -47,6 +47,11 @@ import {
 } from './app-quit-confirmation.js'
 import { registerAttachmentIpc } from './attachment-handler.js'
 import {
+  disposeAutoUpdater,
+  initializeAutoUpdater,
+  refreshAutoUpdaterChannel
+} from './auto-updater.js'
+import {
   forceTerminateAllBackgroundTerminals,
   installBackgroundTerminalExitCleanup,
   listBackgroundTerminals
@@ -804,6 +809,7 @@ function applyAppBranding(): void {
 function handleSettingsUpdated(): void {
   applyAppBranding()
   applyAutomationKeepAwake()
+  refreshAutoUpdaterChannel()
   updateMenuBarTray()
 }
 
@@ -1728,6 +1734,11 @@ app.whenReady().then(async () => {
   ipcMain.handle('app:get-unread-session-ids', () => getUnreadSessionIds())
 
   createWindow()
+  initializeAutoUpdater({
+    getChannel: () => getSettingsForRenderer().autoUpdateChannel,
+    getWebContents: () => mainWindow?.webContents ?? null,
+    beforeInstall: () => beginAppClose('update')
+  })
   appLifecycleReady = true
   if (pendingSecondInstanceFocus) {
     pendingSecondInstanceFocus = false
@@ -1795,6 +1806,7 @@ app.on('before-quit', (event) => {
   disposePermissions()
   disposeComputerUseDebug()
   disposeComputerUseHelper()
+  disposeAutoUpdater()
   disposeEmbeddedBrowser()
   void disposePluginMcpRuntimeAsync()
   disposeBrowserManager()

@@ -47,6 +47,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import type { AppHotkeyCommand } from '../../../shared/app-hotkeys'
+import type { AutoUpdateState } from '../../../shared/auto-update'
 import { SESSION_CONTEXT_MENU_SIZE, SessionContextMenu, SessionSidebar } from './SessionSidebar'
 import { clampMenuPosition, MenuSurface, useDismissableMenu } from './ui/menu'
 import { SidebarProvider } from './ui/sidebar'
@@ -286,6 +287,8 @@ export function Layout(): React.JSX.Element {
   const [titleRenameValue, setTitleRenameValue] = useState('')
   const [shareToast, setShareToast] = useState<ShareToastState | null>(null)
   const [archiveToast, setArchiveToast] = useState<ArchiveToastState | null>(null)
+  const [autoUpdateState, setAutoUpdateState] = useState<AutoUpdateState | null>(null)
+  const [dismissedUpdateVersion, setDismissedUpdateVersion] = useState<string | null>(null)
   const [devInstancePanelOpen, setDevInstancePanelOpen] = useState(false)
   const [copiedDevInstancePath, setCopiedDevInstancePath] = useState<string | null>(null)
   const reduceMotion = useReducedMotion()
@@ -880,6 +883,18 @@ export function Layout(): React.JSX.Element {
   useEffect(() => initPluginEvents(), [])
 
   useEffect(() => {
+    let cancelled = false
+    void window.api.autoUpdate.getState().then((nextState) => {
+      if (!cancelled) setAutoUpdateState(nextState)
+    })
+    const unsubscribe = window.api.autoUpdate.onStateChange(setAutoUpdateState)
+    return () => {
+      cancelled = true
+      unsubscribe()
+    }
+  }, [])
+
+  useEffect(() => {
     const updateViewportWidth = () => setViewportWidth(window.innerWidth)
     window.addEventListener('resize', updateViewportWidth)
     return () => window.removeEventListener('resize', updateViewportWidth)
@@ -1431,6 +1446,26 @@ export function Layout(): React.JSX.Element {
           </div>
         ) : null}
         <ToastViewport>
+          {autoUpdateState?.status === 'downloaded' &&
+          autoUpdateState.availableVersion !== dismissedUpdateVersion ? (
+            <SystemToast
+              message={t('layout.relaunchToUpdate', {
+                version: autoUpdateState.availableVersion ?? ''
+              })}
+              detail={t('layout.updateDownloaded')}
+              action={
+                <button
+                  type="button"
+                  className="cursor-pointer font-medium text-[#0969da] hover:underline dark:text-[#58a6ff]"
+                  onClick={() => void window.api.autoUpdate.install()}
+                >
+                  {t('layout.restart')}
+                </button>
+              }
+              onClose={() => setDismissedUpdateVersion(autoUpdateState.availableVersion)}
+              closeLabel={t('layout.closeUpdateDialog')}
+            />
+          ) : null}
           {archiveToast ? (
             <SystemToast
               key={archiveToast.id}

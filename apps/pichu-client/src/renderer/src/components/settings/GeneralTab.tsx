@@ -2,6 +2,7 @@ import { useI18n } from '@renderer/lib/i18n'
 import { useSettingsStore } from '@renderer/stores/settings-store'
 import { Download } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import type { AutoUpdateState } from '../../../../shared/auto-update'
 import {
   SettingsButton,
   SettingsCard,
@@ -18,8 +19,10 @@ export function GeneralTab(): React.JSX.Element {
   const [deviceIdLoadFailed, setDeviceIdLoadFailed] = useState(false)
   const [exportingDiagnostics, setExportingDiagnostics] = useState(false)
   const [diagnosticsMessage, setDiagnosticsMessage] = useState<string | null>(null)
+  const [autoUpdateState, setAutoUpdateState] = useState<AutoUpdateState | null>(null)
   const {
     language,
+    autoUpdateChannel,
     showInMenuBar,
     followUpBehavior,
     completionNotifications,
@@ -28,6 +31,7 @@ export function GeneralTab(): React.JSX.Element {
     enableAgentsSkills,
     enableClaudeSkills,
     updateLanguage,
+    updateAutoUpdateChannel,
     updateShowInMenuBar,
     updateFollowUpBehavior,
     updateCompletionNotifications,
@@ -51,6 +55,52 @@ export function GeneralTab(): React.JSX.Element {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    void window.api.autoUpdate.getState().then((nextState) => {
+      if (!cancelled) setAutoUpdateState(nextState)
+    })
+    const unsubscribe = window.api.autoUpdate.onStateChange(setAutoUpdateState)
+    return () => {
+      cancelled = true
+      unsubscribe()
+    }
+  }, [])
+
+  const updateStatusMessage = (): string | null => {
+    if (!autoUpdateState) return null
+    switch (autoUpdateState.status) {
+      case 'checking':
+        return t('general.update.status.checking')
+      case 'unavailable':
+        return t('general.update.status.unavailable')
+      case 'not-available':
+        return t('general.update.status.notAvailable')
+      case 'downloading':
+        return t('general.update.status.available', {
+          version: autoUpdateState.availableVersion ?? ''
+        })
+      case 'downloaded':
+        return t('general.update.status.ready', {
+          version: autoUpdateState.availableVersion ?? ''
+        })
+      case 'error':
+        return t('general.update.status.error', {
+          message: autoUpdateState.error ?? t('general.update.status.unknownError')
+        })
+      default:
+        return null
+    }
+  }
+
+  const handleUpdateAction = async (): Promise<void> => {
+    const nextState =
+      autoUpdateState?.status === 'downloaded'
+        ? await window.api.autoUpdate.install()
+        : await window.api.autoUpdate.check()
+    setAutoUpdateState(nextState)
+  }
 
   const exportDiagnostics = async (): Promise<void> => {
     setExportingDiagnostics(true)
@@ -109,6 +159,51 @@ export function GeneralTab(): React.JSX.Element {
                   { value: 'steer', label: t('general.followUp.steer') }
                 ]}
               />
+            </SettingsRow>
+          </SettingsCard>
+        </SettingsSection>
+
+        <SettingsSection title={t('general.update.label')}>
+          <SettingsCard>
+            <SettingsRow
+              label={t('general.autoUpdateChannel.label')}
+              description={t('general.autoUpdateChannel.description')}
+            >
+              <SettingsSegmentedControl
+                value={autoUpdateChannel}
+                onChange={(value) => void updateAutoUpdateChannel(value)}
+                options={[
+                  { value: 'stable', label: t('general.autoUpdateChannel.stable') },
+                  { value: 'beta', label: t('general.autoUpdateChannel.beta') }
+                ]}
+              />
+            </SettingsRow>
+            <SettingsRow
+              label={t('general.update.label')}
+              description={t('general.update.description')}
+            >
+              <div className="flex flex-col items-end gap-1.5">
+                <SettingsButton
+                  disabled={
+                    autoUpdateState?.status === 'checking' ||
+                    autoUpdateState?.status === 'downloading' ||
+                    autoUpdateState?.status === 'unavailable'
+                  }
+                  onClick={() => void handleUpdateAction()}
+                >
+                  <Download className="size-3.5" strokeWidth={1.8} />
+                  {autoUpdateState?.status === 'downloaded'
+                    ? t('layout.restartToInstall')
+                    : autoUpdateState?.status === 'checking'
+                      ? t('general.update.checking')
+                      : t('general.update.check')}
+                </SettingsButton>
+                {updateStatusMessage() ? (
+                  <p className="max-w-[420px] break-words text-right text-[12px] text-muted-foreground">
+                    {updateStatusMessage()}
+                  </p>
+                ) : null}
+              </div>
             </SettingsRow>
           </SettingsCard>
         </SettingsSection>
