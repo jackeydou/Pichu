@@ -36,6 +36,15 @@ module.exports = {
   appId: 'us.pichuapp.pichu.app',
   productName: 'Pichu',
   copyright: 'Copyright © 2026 Pichu Team',
+  publish: {
+    provider: 'github',
+    owner: 'jackeydou',
+    repo: 'Pichu',
+    private: false,
+    channel: updateChannel,
+    tagNamePrefix: ''
+  },
+  generateUpdatesFilesForAllChannels: true,
   protocols: [
     {
       name: 'Pichu Client Auth',
@@ -123,7 +132,9 @@ module.exports = {
   },
   mac: {
     icon: 'build/icon.icns',
+    target: ['dmg', 'zip'],
     identity: skipNotarize ? null : undefined,
+    forceCodeSigning: !skipNotarize,
     hardenedRuntime: true,
     entitlements: 'build/entitlements.mac.plist',
     entitlementsInherit: 'build/entitlements.mac.plist',

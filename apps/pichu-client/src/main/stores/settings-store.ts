@@ -14,6 +14,7 @@ import {
   type SaveArtifactRequest
 } from '../../shared/artifacts.js'
 import type { MessageAttachment } from '../../shared/attachments.js'
+import { type AutoUpdateChannel, normalizeAutoUpdateChannel } from '../../shared/auto-update.js'
 import { isDebugPackage } from '../../shared/build-mode.js'
 import type { DevAppInstanceInfo } from '../../shared/dev-app-instance.js'
 import { IMAGE_GENERATION_MODEL } from '../../shared/image-generation-config.js'
@@ -296,6 +297,7 @@ export function getSettingsForRenderer(): {
   computerUseEnabled: boolean
   debugMode: boolean
   language: LanguageSetting
+  autoUpdateChannel: AutoUpdateChannel
   showInMenuBar: boolean
   showModelSwitcher: boolean
   followUpBehavior: FollowUpBehaviorSetting
@@ -314,6 +316,7 @@ export function getSettingsForRenderer(): {
   const dataRoot = getDataRoot()
   const devInstance = getDevAppInstanceInfo()
   const language = getStoredSetting('language')
+  const autoUpdateChannel = getStoredSetting('autoUpdateChannel')
   const followUpBehavior = getStoredSetting('followUpBehavior')
   const completionNotifications = getStoredSetting('completionNotifications')
   const themeMode = getStoredSetting('themeMode')
@@ -341,6 +344,9 @@ export function getSettingsForRenderer(): {
       isInstalledPluginEnabled(COMPUTER_USE_PLUGIN_NAME),
     debugMode: getStoredSetting('debugMode') === 'true',
     language: language === 'zh-CN' || language === 'en' ? language : 'auto',
+    autoUpdateChannel: normalizeAutoUpdateChannel(
+      autoUpdateChannel ?? (app.getVersion().includes('-beta') ? 'beta' : 'stable')
+    ),
     showInMenuBar: getStoredSetting('showInMenuBar') !== 'false',
     showModelSwitcher: true,
     followUpBehavior: followUpBehavior === 'steer' ? 'steer' : 'queue',
@@ -373,6 +379,7 @@ export type SettingsPatch = {
   enableClaudeSkills?: boolean
   debugMode?: boolean
   language?: LanguageSetting
+  autoUpdateChannel?: AutoUpdateChannel
   showInMenuBar?: boolean
   showModelSwitcher?: boolean
   followUpBehavior?: FollowUpBehaviorSetting
@@ -421,6 +428,9 @@ export function applySettingsPatch(
   }
   if (patch.language !== undefined) {
     setStoredSetting('language', patch.language)
+  }
+  if (patch.autoUpdateChannel !== undefined) {
+    setStoredSetting('autoUpdateChannel', normalizeAutoUpdateChannel(patch.autoUpdateChannel))
   }
   if (patch.showInMenuBar !== undefined) {
     setStoredSetting('showInMenuBar', String(patch.showInMenuBar))

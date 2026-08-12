@@ -1,0 +1,1 @@
+- Updates: Publish signed and notarized macOS releases through GitHub with in-app stable and beta updates.

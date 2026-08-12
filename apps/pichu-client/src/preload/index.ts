@@ -2,6 +2,7 @@ import { electronAPI } from '@electron-toolkit/preload'
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import type { PichuMessageVisibility } from '../shared/agent-message-visibility.js'
 import type { AppHotkeyPayload } from '../shared/app-hotkeys.js'
+import type { AutoUpdateChannel, AutoUpdateState } from '../shared/auto-update.js'
 import type {
   CleanBackgroundTerminalsRequest,
   CleanBackgroundTerminalsResult,
@@ -140,6 +141,7 @@ const api = {
       enableClaudeSkills?: boolean
       debugMode?: boolean
       language?: 'auto' | 'zh-CN' | 'en'
+      autoUpdateChannel?: AutoUpdateChannel
       showInMenuBar?: boolean
       showModelSwitcher?: boolean
       followUpBehavior?: 'queue' | 'steer'
@@ -638,6 +640,16 @@ const api = {
       ipcRenderer.invoke('background-terminals:terminate', input),
     clean: (input?: CleanBackgroundTerminalsRequest): Promise<CleanBackgroundTerminalsResult> =>
       ipcRenderer.invoke('background-terminals:clean', input)
+  },
+  autoUpdate: {
+    getState: (): Promise<AutoUpdateState> => ipcRenderer.invoke('auto-update:get-state'),
+    check: (): Promise<AutoUpdateState> => ipcRenderer.invoke('auto-update:check'),
+    install: (): Promise<AutoUpdateState> => ipcRenderer.invoke('auto-update:install'),
+    onStateChange: (callback: (state: AutoUpdateState) => void): (() => void) => {
+      const listener = (_: unknown, nextState: AutoUpdateState) => callback(nextState)
+      ipcRenderer.on('auto-update:state', listener)
+      return () => ipcRenderer.removeListener('auto-update:state', listener)
+    }
   },
   app: {
     buildInfo: () => ipcRenderer.invoke('app:build-info'),

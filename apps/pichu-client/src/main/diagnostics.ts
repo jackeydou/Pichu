@@ -61,6 +61,10 @@ function chatEventsLogPath(): string {
   return join(logsRoot(), CHAT_EVENTS_LOG)
 }
 
+function autoUpdateEventsLogPath(): string {
+  return join(logsRoot(), AUTO_UPDATE_EVENTS_LOG)
+}
+
 function safeDetails(details: ChatDiagnosticDetails | undefined): ChatDiagnosticDetails {
   if (!details) return {}
   const safe: ChatDiagnosticDetails = {}
@@ -130,6 +134,16 @@ export function writeChatDiagnosticEvent(input: ChatDiagnosticEventInput): void 
     sessionId: input.sessionId?.trim() || null,
     runId: input.runId?.trim() || null,
     ...safeDetails(input.details)
+  })
+}
+
+export function writeAutoUpdateDiagnosticEvent(
+  event: string,
+  details: Record<string, DiagnosticPrimitive> = {}
+): void {
+  appendJsonlLog(autoUpdateEventsLogPath(), {
+    event: event.slice(0, 100),
+    ...safeDetails(details)
   })
 }
 

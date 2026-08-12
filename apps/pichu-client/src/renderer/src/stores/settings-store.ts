@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { AutoUpdateChannel } from '../../../shared/auto-update'
 import type { DevAppInstanceInfo } from '../../../shared/dev-app-instance'
 import type { PichuThinkingLevel } from '../../../shared/model-settings'
 import { type AgentTrustProfile, normalizeAgentTrustProfile } from '../../../shared/tool-approval'
@@ -16,6 +17,7 @@ export type SettingsPayload = {
   computerUseEnabled: boolean
   debugMode: boolean
   language: LanguageSetting
+  autoUpdateChannel: AutoUpdateChannel
   showInMenuBar: boolean
   showModelSwitcher: boolean
   followUpBehavior: 'queue' | 'steer'
@@ -44,6 +46,7 @@ type SettingsState = {
   computerUseEnabled: boolean
   debugMode: boolean
   language: LanguageSetting
+  autoUpdateChannel: AutoUpdateChannel
   showInMenuBar: boolean
   followUpBehavior: 'queue' | 'steer'
   completionNotifications: 'never' | 'unfocused' | 'always'
@@ -68,6 +71,7 @@ type SettingsState = {
   updateEnableAgentsSkills: (enabled: boolean) => Promise<void>
   updateEnableClaudeSkills: (enabled: boolean) => Promise<void>
   updateLanguage: (language: LanguageSetting) => Promise<void>
+  updateAutoUpdateChannel: (channel: AutoUpdateChannel) => Promise<void>
   updateShowInMenuBar: (enabled: boolean) => Promise<void>
   updateFollowUpBehavior: (behavior: 'queue' | 'steer') => Promise<void>
   updateCompletionNotifications: (value: 'never' | 'unfocused' | 'always') => Promise<void>
@@ -103,6 +107,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   computerUseEnabled: false,
   debugMode: false,
   language: 'auto',
+  autoUpdateChannel: 'stable',
   showInMenuBar: true,
   followUpBehavior: 'queue',
   completionNotifications: 'unfocused',
@@ -131,6 +136,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       computerUseEnabled: payload.computerUseEnabled,
       debugMode: payload.debugMode,
       language: payload.language,
+      autoUpdateChannel: payload.autoUpdateChannel,
       showInMenuBar: payload.showInMenuBar,
       showModelSwitcher: payload.showModelSwitcher,
       followUpBehavior: payload.followUpBehavior,
@@ -185,6 +191,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   updateEnableClaudeSkills: (enabled) =>
     applySetting({ enableClaudeSkills: enabled }, get().applyPayload),
   updateLanguage: (language) => applySetting({ language }, get().applyPayload),
+  updateAutoUpdateChannel: (autoUpdateChannel) =>
+    applySetting({ autoUpdateChannel }, get().applyPayload),
   updateShowInMenuBar: (enabled) => applySetting({ showInMenuBar: enabled }, get().applyPayload),
   updateFollowUpBehavior: (behavior) =>
     applySetting({ followUpBehavior: behavior }, get().applyPayload),

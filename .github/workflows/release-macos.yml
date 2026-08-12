@@ -1,0 +1,136 @@
+name: Release macOS
+
+on:
+  push:
+    tags:
+      - '[0-9]*.[0-9]*.[0-9]*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-macos-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build, sign, notarize, and release
+    runs-on: macos-15
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Validate release tag
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$GITHUB_REF_NAME" =~ ^[0-9]{4}\.[0-9]{1,2}\.[0-9]+(-beta\.[0-9]+)?$ ]]; then
+            echo "Unsupported release tag: $GITHUB_REF_NAME"
+            exit 1
+          fi
+          package_version="$(node -p "require('./apps/pichu-client/package.json').version")"
+          if [[ "$GITHUB_REF_NAME" != "$package_version" ]]; then
+            echo "Tag $GITHUB_REF_NAME does not match package version $package_version"
+            exit 1
+          fi
+          echo "version=$package_version" >> "$GITHUB_OUTPUT"
+          echo "RELEASE_VERSION=$package_version" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate release files
+        run: pnpm run release:check -- --version "$RELEASE_VERSION"
+
+      - name: Prepare App Store Connect API key
+        shell: bash
+        env:
+          APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          MAC_CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          MAC_CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          : "${APPLE_API_KEY_BASE64:?Missing APPLE_API_KEY_BASE64 repository secret}"
+          : "${APPLE_API_KEY_ID:?Missing APPLE_API_KEY_ID repository secret}"
+          : "${APPLE_API_ISSUER:?Missing APPLE_API_ISSUER repository secret}"
+          : "${APPLE_TEAM_ID:?Missing APPLE_TEAM_ID repository secret}"
+          : "${MAC_CSC_LINK:?Missing MAC_CSC_LINK repository secret}"
+          : "${MAC_CSC_KEY_PASSWORD:?Missing MAC_CSC_KEY_PASSWORD repository secret}"
+          printf '%s' "$APPLE_API_KEY_BASE64" | base64 -D > "$RUNNER_TEMP/AuthKey.p8"
+          chmod 600 "$RUNNER_TEMP/AuthKey.p8"
+
+      - name: Build, sign, and notarize macOS package
+        run: pnpm --dir apps/pichu-client run build:mac
+        env:
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_API_KEY: ${{ runner.temp }}/AuthKey.p8
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - name: Verify signature and notarization ticket
+        shell: bash
+        working-directory: apps/pichu-client
+        run: |
+          set -euo pipefail
+          app_path="$(find dist -maxdepth 3 -type d -name 'Pichu.app' -print -quit)"
+          : "${app_path:?Could not find packaged Pichu.app}"
+          codesign --verify --deep --strict --verbose=2 "$app_path"
+          spctl --assess --verbose --type exec "$app_path"
+          xcrun stapler validate "$app_path"
+
+      - name: Create checksums
+        shell: bash
+        working-directory: apps/pichu-client
+        run: shasum -a 256 dist/*.dmg dist/*.zip > dist/SHA256SUMS.txt
+
+      - name: Create stable GitHub Release draft
+        if: ${{ !contains(steps.release.outputs.version, '-beta.') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$RELEASE_VERSION" \
+            apps/pichu-client/dist/*.dmg \
+            apps/pichu-client/dist/*.zip \
+            apps/pichu-client/dist/*-mac.yml \
+            apps/pichu-client/dist/*.blockmap \
+            apps/pichu-client/dist/SHA256SUMS.txt \
+            --verify-tag \
+            --draft \
+            --title "Pichu $RELEASE_VERSION" \
+            --notes-file "release-notes/$RELEASE_VERSION.md"
+          gh release edit "$RELEASE_VERSION" --draft=false --latest
+
+      - name: Create beta GitHub Release draft
+        if: ${{ contains(steps.release.outputs.version, '-beta.') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$RELEASE_VERSION" \
+            apps/pichu-client/dist/*.dmg \
+            apps/pichu-client/dist/*.zip \
+            apps/pichu-client/dist/*-mac.yml \
+            apps/pichu-client/dist/*.blockmap \
+            apps/pichu-client/dist/SHA256SUMS.txt \
+            --verify-tag \
+            --draft \
+            --prerelease \
+            --title "Pichu $RELEASE_VERSION" \
+            --notes-file "release-notes/$RELEASE_VERSION.md"
+          gh release edit "$RELEASE_VERSION" --draft=false --prerelease
