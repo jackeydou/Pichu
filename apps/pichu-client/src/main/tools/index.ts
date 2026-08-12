@@ -4,6 +4,7 @@ import type {
   ToolApprovalAutoReviewAction,
   ToolApprovalSubject
 } from '../../shared/tool-approval.js'
+import { oauthProviderForCustomMcpServer } from '../custom-mcp-oauth.js'
 import { isFeatureGated } from '../feature-gates/local-feature-gate-service.js'
 import type { HumanInputRuntimeContext } from '../human-input-runtime.js'
 import { createLeadTeamTools } from '../multi-agent/team-tools.js'
@@ -14,6 +15,7 @@ import {
 } from '../plugins/plugin-registry.js'
 import { getUsePluginStatusesAsync } from '../plugins/use-plugin-status.js'
 import { bashCommandRequiresAutoApproval } from '../shell-command-safety.js'
+import { customMcpRuntimeDataPath, enabledCustomMcpServers } from '../stores/custom-mcp-store.js'
 import { getAgentTrustProfile } from '../stores/settings-store.js'
 import { withToolApproval } from '../tool-approval-metadata.js'
 import { readFileChangePreviews, readFileWritePaths } from './auto-review-actions.js'
@@ -262,10 +264,10 @@ function applyProfileRequiredApproval(
 function applyMcpApproval(tool: AgentTool): AgentTool {
   return withToolApproval(tool, {
     mode: 'prompt',
-    reason: 'Run a tool provided by an installed plugin',
-    question: () => `Run plugin tool ${tool.label ?? tool.name}?`,
+    reason: 'Run a tool provided by an MCP server',
+    question: () => `Run MCP tool ${tool.label ?? tool.name}?`,
     shouldPrompt: () => approvalRequiredByProfile(getAgentTrustProfile()),
-    describe: () => `Run plugin tool ${tool.label ?? tool.name}`
+    describe: () => `Run MCP tool ${tool.label ?? tool.name}`
   })
 }
 
@@ -284,8 +286,36 @@ export async function createToolsForCwd(
   }
 ): Promise<AgentTool[]> {
   const pluginBinPaths = await getEnabledPluginBinPathsAsync()
+  const pluginMcpServers = await getEnabledPluginMcpServersAsync()
+  const customMcpServers = enabledCustomMcpServers().map((server) => ({
+    source: 'custom' as const,
+    pluginId: `custom:${server.id}`,
+    pluginName: 'custom',
+    pluginVersion: '1',
+    pluginRoot:
+      server.type === 'stdio' && server.cwd ? server.cwd : customMcpRuntimeDataPath(server.id),
+    pluginDataRoot: customMcpRuntimeDataPath(server.id),
+    serverName: server.name,
+    server:
+      server.type === 'stdio'
+        ? {
+            type: 'stdio' as const,
+            command: server.command,
+            args: server.args,
+            env: server.env,
+            cwd: server.cwd || undefined
+          }
+        : {
+            type: 'streamable-http' as const,
+            url: server.url,
+            headers: server.headers
+          }
+  }))
   const pluginMcpTools = (
-    await createEnabledPluginMcpToolsAsync(await getEnabledPluginMcpServersAsync())
+    await createEnabledPluginMcpToolsAsync(
+      [...pluginMcpServers, ...customMcpServers],
+      oauthProviderForCustomMcpServer
+    )
   ).map(applyMcpApproval)
   const codingTools = createPichuCodingTools(
     cwd,

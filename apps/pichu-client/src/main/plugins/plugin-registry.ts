@@ -88,6 +88,7 @@ export function pluginRuntimeDataPath(plugin: Pick<InstalledPlugin, 'name'>): st
 }
 
 export type EnabledPluginMcpServer = {
+  source?: 'plugin' | 'custom'
   pluginId: string
   pluginName: string
   pluginVersion: string

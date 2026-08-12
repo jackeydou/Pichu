@@ -10,6 +10,7 @@ import type {
   TerminateBackgroundTerminalRequest,
   TerminateBackgroundTerminalResult
 } from '../shared/background-terminals.js'
+import type { CustomMcpConnectResult, SaveCustomMcpServerInput } from '../shared/custom-mcp.js'
 import type {
   ChatDiagnosticEventInput,
   DiagnosticsExportOptions,
@@ -104,6 +105,14 @@ const api = {
     save: (model: UserModelConfig, previousId?: string) =>
       ipcRenderer.invoke('models:save', { model, previousId }),
     delete: (modelId: string) => ipcRenderer.invoke('models:delete', modelId)
+  },
+  customMcp: {
+    list: () => ipcRenderer.invoke('custom-mcp:list'),
+    save: (server: SaveCustomMcpServerInput) => ipcRenderer.invoke('custom-mcp:save', server),
+    delete: (serverId: string) => ipcRenderer.invoke('custom-mcp:delete', serverId),
+    connect: (serverId: string): Promise<CustomMcpConnectResult> =>
+      ipcRenderer.invoke('custom-mcp:connect', serverId),
+    disconnect: (serverId: string) => ipcRenderer.invoke('custom-mcp:disconnect', serverId)
   },
   openAIOAuth: {
     get: (): Promise<OpenAIOAuthStatus> => ipcRenderer.invoke('openai-oauth:get'),

@@ -1,0 +1,1 @@
+- -- Customize: add stdio and Remote MCP server configuration with protocol-native OAuth support.

@@ -2,9 +2,11 @@ import type { BuildInfo } from '@renderer/../../preload/index.d'
 import { AdvancedTab } from '@renderer/components/settings/AdvancedTab'
 import { AppearanceTab } from '@renderer/components/settings/AppearanceTab'
 import { ArchivedChatsTab } from '@renderer/components/settings/ArchivedChatsTab'
+import { CustomizeTab } from '@renderer/components/settings/CustomizeTab'
 import { DeveloperTab } from '@renderer/components/settings/DeveloperTab'
 import { GeneralTab } from '@renderer/components/settings/GeneralTab'
 import { HotkeysTab } from '@renderer/components/settings/HotkeysTab'
+import { McpIcon } from '@renderer/components/settings/McpIcon'
 import { ModelsTab } from '@renderer/components/settings/ModelsTab'
 import { SidebarContent, SidebarGroup } from '@renderer/components/ui/sidebar'
 import type { I18nKey } from '@renderer/lib/i18n'
@@ -25,11 +27,20 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { isDebugPackage } from '../../../shared/build-mode'
 
-type TabId = 'general' | 'models' | 'appearance' | 'hotkeys' | 'archived' | 'developer' | 'advanced'
+type TabId =
+  | 'general'
+  | 'models'
+  | 'customize'
+  | 'appearance'
+  | 'hotkeys'
+  | 'archived'
+  | 'developer'
+  | 'advanced'
 
 const TABS: { id: TabId; labelKey: I18nKey; icon: React.ElementType }[] = [
   { id: 'general', labelKey: 'settings.tab.general', icon: SettingsIcon },
   { id: 'models', labelKey: 'settings.tab.models', icon: Cpu },
+  { id: 'customize', labelKey: 'settings.tab.customize', icon: McpIcon },
   { id: 'appearance', labelKey: 'settings.tab.appearance', icon: Palette },
   { id: 'hotkeys', labelKey: 'settings.tab.hotkeys', icon: Keyboard },
   { id: 'archived', labelKey: 'settings.tab.archived', icon: Archive },
@@ -40,6 +51,7 @@ const TABS: { id: TabId; labelKey: I18nKey; icon: React.ElementType }[] = [
 const TAB_COMPONENTS: Record<TabId, React.ComponentType> = {
   general: GeneralTab,
   models: ModelsTab,
+  customize: CustomizeTab,
   appearance: AppearanceTab,
   hotkeys: HotkeysTab,
   archived: ArchivedChatsTab,
