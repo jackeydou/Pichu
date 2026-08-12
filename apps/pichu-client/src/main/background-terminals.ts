@@ -452,8 +452,7 @@ async function settleExitedEntryOutput(entry: BackgroundTerminalEntry): Promise<
   if (entry.exitOutputDrainDone || isVisibleTerminalStatus(entry.status)) return
   entry.exitOutputDrainDone = true
   await new Promise<void>((resolve) => {
-    const timeout = setTimeout(resolve, POST_EXIT_OUTPUT_DRAIN_MS)
-    timeout.unref()
+    setTimeout(resolve, POST_EXIT_OUTPUT_DRAIN_MS)
   })
 }
 
@@ -480,7 +479,6 @@ function waitForEntryOutput(entry: BackgroundTerminalEntry, timeoutMs: number): 
       finish()
     }
     entry.waiters.add(waiter)
-    timeout.unref()
   })
 }
 
