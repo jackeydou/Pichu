@@ -1,6 +1,18 @@
 import { ipcMain, shell } from 'electron'
+import type { CustomMcpConnectResult } from '../../shared/custom-mcp.js'
 import type { OpenAIOAuthStatus } from '../../shared/openai-oauth.js'
+import {
+  connectCustomMcpRemoteServer,
+  disconnectCustomMcpRemoteServer,
+  isCustomMcpOAuthDiscoveryHtmlError
+} from '../custom-mcp-oauth.js'
 import { hasOpenAIOAuthCredential, loginOpenAIOAuth, logoutOpenAIOAuth } from '../openai-oauth.js'
+import { stopCustomMcpServerAsync } from '../plugins/mcp-runtime.js'
+import {
+  deleteCustomMcpServer,
+  listCustomMcpServers,
+  saveCustomMcpServer
+} from '../stores/custom-mcp-store.js'
 import {
   clearImageGenerationApiKey,
   getImageGenerationConfigStatus,
@@ -43,6 +55,38 @@ export function registerSettingsIpcHandlers(): void {
     saveUserModelConfig(input?.model, input?.previousId)
   )
   ipcMain.handle('models:delete', (_, modelId: unknown) => deleteUserModelConfig(modelId))
+  ipcMain.handle('custom-mcp:list', () => listCustomMcpServers())
+  ipcMain.handle('custom-mcp:save', async (_, input: unknown) => {
+    const serverId =
+      input && typeof input === 'object' && 'id' in input && typeof input.id === 'string'
+        ? input.id
+        : undefined
+    if (serverId) await stopCustomMcpServerAsync(serverId)
+    return saveCustomMcpServer(input)
+  })
+  ipcMain.handle('custom-mcp:delete', async (_, serverId: unknown) => {
+    if (typeof serverId === 'string') await stopCustomMcpServerAsync(serverId)
+    return deleteCustomMcpServer(serverId)
+  })
+  ipcMain.handle(
+    'custom-mcp:connect',
+    async (_, serverId: unknown): Promise<CustomMcpConnectResult> => {
+      try {
+        await connectCustomMcpRemoteServer(serverId)
+        return { ok: true, servers: listCustomMcpServers() }
+      } catch (error) {
+        if (isCustomMcpOAuthDiscoveryHtmlError(error)) {
+          return { ok: false, error: 'oauth_discovery_invalid' }
+        }
+        throw error
+      }
+    }
+  )
+  ipcMain.handle('custom-mcp:disconnect', async (_, serverId: unknown) => {
+    if (typeof serverId === 'string') await stopCustomMcpServerAsync(serverId)
+    disconnectCustomMcpRemoteServer(serverId)
+    return listCustomMcpServers()
+  })
   ipcMain.handle('openai-oauth:get', openAIOAuthStatus)
   ipcMain.handle('openai-oauth:login', async () => {
     await loginOpenAIOAuth((url) => shell.openExternal(url))

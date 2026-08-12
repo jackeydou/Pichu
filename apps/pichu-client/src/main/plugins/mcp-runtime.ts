@@ -1,6 +1,7 @@
 import { access, mkdir, realpath, stat } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import type { AgentTool } from '@earendil-works/pi-agent-core'
+import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import {
   getDefaultEnvironment,
@@ -62,6 +63,12 @@ function expandPluginVariables(value: string, descriptor: EnabledPluginMcpServer
 
 async function resolveStdioCwd(descriptor: EnabledPluginMcpServer): Promise<string> {
   const server = descriptor.server
+  if (descriptor.source === 'custom') {
+    if (server.type !== 'stdio') throw new Error('Expected an MCP stdio server')
+    const requested = server.cwd ? resolve(server.cwd) : descriptor.pluginRoot
+    if (!server.cwd) await mkdir(requested, { recursive: true })
+    return realpath(requested)
+  }
   if (server.type !== 'stdio' || !server.cwd)
     return resolveContainedPath(descriptor.pluginRoot, descriptor.pluginRoot)
 
@@ -85,7 +92,12 @@ async function resolveStdioCommand(
   await mkdir(descriptor.pluginDataRoot, { recursive: true })
   const cwd = await resolveStdioCwd(descriptor)
   let command = server.command
-  if (command.startsWith('./')) {
+  if (descriptor.source === 'custom' && (command.startsWith('./') || isAbsolute(command))) {
+    command = await realpath(command.startsWith('./') ? resolve(cwd, command) : command)
+    const commandStat = await stat(command)
+    if (!commandStat.isFile()) throw new Error(`MCP command is not a file: ${server.command}`)
+    await access(command)
+  } else if (command.startsWith('./')) {
     command = await resolveContainedPath(
       descriptor.pluginRoot,
       resolve(descriptor.pluginRoot, command)
@@ -119,14 +131,27 @@ async function resolveStdioCommand(
   }
 }
 
-async function createTransport(descriptor: EnabledPluginMcpServer): Promise<Transport> {
+type CustomMcpOAuthProviderResolver = (serverId: string) => OAuthClientProvider | undefined
+
+async function createTransport(
+  descriptor: EnabledPluginMcpServer,
+  resolveOAuthProvider?: CustomMcpOAuthProviderResolver
+): Promise<Transport> {
   if (descriptor.server.type === 'stdio') {
     const launch = await resolveStdioCommand(descriptor)
     const transport = new StdioClientTransport({ ...launch, stderr: 'pipe' })
     transport.stderr?.on('data', () => undefined)
     return transport
   }
+  const authProvider =
+    descriptor.source === 'custom'
+      ? resolveOAuthProvider?.(descriptor.pluginId.replace(/^custom:/, ''))
+      : undefined
+  if (descriptor.source === 'custom' && !authProvider) {
+    throw new Error('Custom MCP authentication is unavailable')
+  }
   return new StreamableHTTPClientTransport(new URL(descriptor.server.url), {
+    authProvider,
     requestInit: {
       headers: descriptor.server.headers,
       redirect: 'error'
@@ -143,13 +168,16 @@ function connectionKey(descriptor: EnabledPluginMcpServer): string {
   ].join('\0')
 }
 
-async function connect(descriptor: EnabledPluginMcpServer): Promise<McpConnection> {
+async function connect(
+  descriptor: EnabledPluginMcpServer,
+  resolveOAuthProvider?: CustomMcpOAuthProviderResolver
+): Promise<McpConnection> {
   const key = connectionKey(descriptor)
   const existing = connections.get(key)
   if (existing) return existing
 
   const pending = (async () => {
-    const transport = await createTransport(descriptor)
+    const transport = await createTransport(descriptor, resolveOAuthProvider)
     const client = new Client({ name: 'pichu', version: '1.0.0' }, { capabilities: {} })
     try {
       await client.connect(transport, { timeout: MCP_CONNECT_TIMEOUT_MS })
@@ -254,7 +282,11 @@ function resultContent(
   })
 }
 
-function createAgentTool(descriptor: EnabledPluginMcpServer, tool: McpToolDescription): AgentTool {
+function createAgentTool(
+  descriptor: EnabledPluginMcpServer,
+  tool: McpToolDescription,
+  resolveOAuthProvider?: CustomMcpOAuthProviderResolver
+): AgentTool {
   const parameters = tool.inputSchema as TSchema
   return {
     name: externalToolName(descriptor, tool.name),
@@ -265,7 +297,7 @@ function createAgentTool(descriptor: EnabledPluginMcpServer, tool: McpToolDescri
     parameters,
     async execute(_toolCallId, params, signal) {
       const argumentsValue = isRecord(params) ? params : {}
-      const connection = await connect(descriptor)
+      const connection = await connect(descriptor, resolveOAuthProvider)
       const result = await connection.client.callTool(
         { name: tool.name, arguments: argumentsValue },
         undefined,
@@ -292,14 +324,15 @@ function createAgentTool(descriptor: EnabledPluginMcpServer, tool: McpToolDescri
 }
 
 export async function createEnabledPluginMcpToolsAsync(
-  descriptors: EnabledPluginMcpServer[]
+  descriptors: EnabledPluginMcpServer[],
+  resolveOAuthProvider?: CustomMcpOAuthProviderResolver
 ): Promise<AgentTool[]> {
   const tools: AgentTool[] = []
   const names = new Set<string>()
   const connected = await Promise.all(
     descriptors.map(async (descriptor) => {
       try {
-        return { descriptor, connection: await connect(descriptor) }
+        return { descriptor, connection: await connect(descriptor, resolveOAuthProvider) }
       } catch (error) {
         console.warn('[plugin-mcp] Failed to connect MCP server', {
           pluginName: descriptor.pluginName,
@@ -314,7 +347,7 @@ export async function createEnabledPluginMcpToolsAsync(
     if (!entry) continue
     const { descriptor, connection } = entry
     for (const tool of connection.tools) {
-      const agentTool = createAgentTool(descriptor, tool)
+      const agentTool = createAgentTool(descriptor, tool, resolveOAuthProvider)
       if (names.has(agentTool.name)) {
         throw new Error(`Duplicate MCP tool name: ${agentTool.name}`)
       }
@@ -333,6 +366,10 @@ export async function stopPluginMcpServersAsync(pluginId: string): Promise<void>
     const connection = await pending.catch(() => undefined)
     await connection?.client.close().catch(() => undefined)
   }
+}
+
+export async function stopCustomMcpServerAsync(serverId: string): Promise<void> {
+  await stopPluginMcpServersAsync(`custom:${serverId}`)
 }
 
 export async function disposePluginMcpRuntimeAsync(): Promise<void> {

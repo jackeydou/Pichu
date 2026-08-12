@@ -235,8 +235,10 @@ Rules:
 
 ## MCP Configuration
 
-MCP configuration lives only at root `mcp.json`. It is not inline in
-`plugin.json` or discovered from another portable path.
+Plugin-owned MCP configuration lives only at root `mcp.json`. It is not inline
+in `plugin.json` or discovered from another portable path. Users may also add
+standalone MCP servers in Settings > Customize; those records are persisted by
+Pichu and do not modify an installed plugin.
 
 ```json
 {
@@ -279,6 +281,12 @@ Pichu supports:
 
 - `stdio` with one executable `command` token and separate `args`.
 - `streamable-http` with an absolute endpoint URL and optional literal headers.
+
+Standalone user configuration exposes the same two transports as `stdio` and
+Remote. Pichu discovers Remote authentication requirements through the MCP
+handshake. If the server requires OAuth, Pichu performs the protocol flow and
+stores the resulting credentials securely; users do not select an auth mode in
+the server configuration.
 
 Pichu does not initially support the deprecated `sse` transport. It reports that
 entry as unsupported and continues loading other entries and components.

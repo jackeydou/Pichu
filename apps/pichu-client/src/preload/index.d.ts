@@ -37,6 +37,11 @@ import type {
 import type { LocalFeatureGateKey, LocalFeatureGateState } from '../shared/feature-gates.js'
 import type { ImageGenerationConfigStatus } from '../shared/image-generation-config.js'
 import type {
+  CustomMcpConnectResult,
+  CustomMcpServerSummary,
+  SaveCustomMcpServerInput
+} from '../shared/custom-mcp.js'
+import type {
   PichuReasoningMenuLevel,
   PichuThinkingLevel,
   RunModelUsage,
@@ -983,6 +988,13 @@ export type PichuApi = {
     list: () => Promise<UserModelSummary[]>
     save: (model: UserModelConfig, previousId?: string) => Promise<UserModelSummary[]>
     delete: (modelId: string) => Promise<UserModelSummary[]>
+  }
+  customMcp: {
+    list: () => Promise<CustomMcpServerSummary[]>
+    save: (server: SaveCustomMcpServerInput) => Promise<CustomMcpServerSummary[]>
+    delete: (serverId: string) => Promise<CustomMcpServerSummary[]>
+    connect: (serverId: string) => Promise<CustomMcpConnectResult>
+    disconnect: (serverId: string) => Promise<CustomMcpServerSummary[]>
   }
   openAIOAuth: {
     get: () => Promise<OpenAIOAuthStatus>
