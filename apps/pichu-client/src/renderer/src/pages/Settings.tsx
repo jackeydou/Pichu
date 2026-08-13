@@ -8,6 +8,7 @@ import { GeneralTab } from '@renderer/components/settings/GeneralTab'
 import { HotkeysTab } from '@renderer/components/settings/HotkeysTab'
 import { McpIcon } from '@renderer/components/settings/McpIcon'
 import { ModelsTab } from '@renderer/components/settings/ModelsTab'
+import { UsageTab } from '@renderer/components/settings/UsageTab'
 import { SidebarContent, SidebarGroup } from '@renderer/components/ui/sidebar'
 import type { I18nKey } from '@renderer/lib/i18n'
 import { useI18n } from '@renderer/lib/i18n'
@@ -16,6 +17,7 @@ import { useSettingsStore } from '@renderer/stores/settings-store'
 import {
   Archive,
   ArrowLeft,
+  ChartNoAxesCombined,
   Code2,
   Cpu,
   Keyboard,
@@ -30,6 +32,7 @@ import { isDebugPackage } from '../../../shared/build-mode'
 type TabId =
   | 'general'
   | 'models'
+  | 'usage'
   | 'customize'
   | 'appearance'
   | 'hotkeys'
@@ -40,6 +43,7 @@ type TabId =
 const TABS: { id: TabId; labelKey: I18nKey; icon: React.ElementType }[] = [
   { id: 'general', labelKey: 'settings.tab.general', icon: SettingsIcon },
   { id: 'models', labelKey: 'settings.tab.models', icon: Cpu },
+  { id: 'usage', labelKey: 'settings.tab.usage', icon: ChartNoAxesCombined },
   { id: 'customize', labelKey: 'settings.tab.customize', icon: McpIcon },
   { id: 'appearance', labelKey: 'settings.tab.appearance', icon: Palette },
   { id: 'hotkeys', labelKey: 'settings.tab.hotkeys', icon: Keyboard },
@@ -51,6 +55,7 @@ const TABS: { id: TabId; labelKey: I18nKey; icon: React.ElementType }[] = [
 const TAB_COMPONENTS: Record<TabId, React.ComponentType> = {
   general: GeneralTab,
   models: ModelsTab,
+  usage: UsageTab,
   customize: CustomizeTab,
   appearance: AppearanceTab,
   hotkeys: HotkeysTab,

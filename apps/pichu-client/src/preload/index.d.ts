@@ -57,6 +57,7 @@ import type {
   SubmitHumanInputPayload
 } from '../shared/human-input.js'
 import type { NativeContextMenuRequest } from '../shared/native-context-menu.js'
+import type { UsageStats } from '../shared/usage-stats.js'
 import type { SopDetail, SopIndexEntry } from '../shared/sop.js'
 import type {
   PluginAdminCancelUploadInput,
@@ -1122,6 +1123,7 @@ export type PichuApi = {
       }>
     >
     contextUsage: (sessionId: string) => Promise<AgentContextUsage | null>
+    usageStats: () => Promise<UsageStats>
     assistantDraft: (sessionId: string) => Promise<string>
     onEvent: (callback: (payload: AgentEventPayload) => void) => () => void
     onRunState: (callback: (payload: AgentRunStatePayload) => void) => () => void

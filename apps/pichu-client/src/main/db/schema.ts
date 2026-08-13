@@ -204,6 +204,17 @@ export const messages = sqliteTable(
   ]
 )
 
+export const usageDailyStats = sqliteTable('usage_daily_stats', {
+  date: text('date').primaryKey(),
+  tokenCount: integer('token_count').notNull().default(0),
+  messageCount: integer('message_count').notNull().default(0)
+})
+
+export const usageModelStats = sqliteTable('usage_model_stats', {
+  modelId: text('model_id').primaryKey(),
+  tokenCount: integer('token_count').notNull().default(0)
+})
+
 export const messageParts = sqliteTable(
   'message_parts',
   {
