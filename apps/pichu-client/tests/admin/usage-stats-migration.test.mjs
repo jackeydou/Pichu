@@ -7,8 +7,29 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 const appRoot = fileURLToPath(new URL('../..', import.meta.url))
-const initialMigration = join(appRoot, 'drizzle', '0000_empty_bushwacker.sql')
 const usageMigration = join(appRoot, 'drizzle', '0001_thankful_ezekiel.sql')
+
+const fixtureSchema = `
+  PRAGMA foreign_keys = ON;
+  CREATE TABLE sessions (
+    session_id text PRIMARY KEY NOT NULL,
+    agent_id text NOT NULL,
+    cwd text NOT NULL,
+    title text DEFAULT '' NOT NULL,
+    created_at text NOT NULL,
+    updated_at text NOT NULL
+  );
+  CREATE TABLE messages (
+    id text PRIMARY KEY NOT NULL,
+    session_id text NOT NULL REFERENCES sessions(session_id) ON DELETE CASCADE,
+    role text NOT NULL,
+    content text NOT NULL,
+    sort_order integer NOT NULL,
+    created_at text NOT NULL,
+    model_id text,
+    model_usage_json text
+  );
+`
 
 function sqliteAvailable() {
   try {
@@ -31,7 +52,7 @@ test('usage migration backfills and maintains aggregates', { skip: !sqliteAvaila
   const databasePath = join(directory, 'usage.db')
 
   t.after(() => rmSync(directory, { recursive: true, force: true }))
-  runSql(databasePath, readFileSync(initialMigration, 'utf8'))
+  runSql(databasePath, fixtureSchema)
   runSql(
     databasePath,
     `
