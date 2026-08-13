@@ -327,6 +327,8 @@ const api = {
 
     contextUsage: (sessionId: string) => ipcRenderer.invoke('agent:context-usage', sessionId),
 
+    usageStats: () => ipcRenderer.invoke('agent:usage-stats'),
+
     assistantDraft: (sessionId: string) => ipcRenderer.invoke('agent:assistant-draft', sessionId),
 
     onEvent: (callback: (payload: unknown) => void): (() => void) => {

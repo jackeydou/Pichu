@@ -31,6 +31,7 @@ import {
   type SessionIndexEntry,
   updateSessionCwd
 } from '../stores/settings-store.js'
+import { getUsageStats } from '../stores/usage-stats-store.js'
 import { cancelToolApprovalRequestsForSession } from '../tool-approval-engine.js'
 import { getLatestContextCompactionMarker } from './context-compaction.js'
 
@@ -463,6 +464,8 @@ export function registerAgentIpcHandlers(context: AgentIpcContext): void {
       return latestAssistantStoredUsage(resolvedSessionId)
     }
   )
+
+  ipcMain.handle('agent:usage-stats', () => getUsageStats())
 
   ipcMain.handle('agent:assistant-draft', (_, sessionId: string): string => {
     const resolvedSessionId = sessionId?.trim()
